@@ -42,8 +42,6 @@ pip install -r requirements.txt
 Create a `.env` file in the root directory with the following (fill your keys):
 
 ```
-SECRET_KEY=your-django-secret-key
-DEBUG=True
 GEMINI_API_KEY=your_gemini_api_key
 AMADEUS_API_KEY=your_amadeus_api_key
 AMADEUS_API_SECRET=your_amadeus_api_secret
