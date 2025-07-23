@@ -85,6 +85,11 @@ Visit [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your browser.
 - **OpenSky Network:** (optional) For real-time flight states. [Info here](https://opensky-network.org/).
 - **Gemini API:** (optional) For AI-powered insights. [Get API key](https://aistudio.google.com/app/apikey).
 
+### ⚠️ Amadeus API Note
+
+The Amadeus API sometimes returns a 500 status code due to instability or endpoint limitations.  
+**Tip:** If you want to use AviationStack instead, simply comment out the Amadeus API integration code at the top of `scraper.py` and uncomment the corresponding AviationStack code. This switch enables you to use a more reliable data source for flight data scraping.
+
 ## 🐞 Troubleshooting
 
 - **Static Files Not Loading:** Ensure `STATIC_URL = '/static/'` and `STATICFILES_DIRS = [ BASE_DIR / 'static' ]` are set in `settings.py`.
