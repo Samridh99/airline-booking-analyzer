@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pricing Trends - Airline Market Analyzer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-line text-primary"></i>
+            Pricing Trends Analysis
+        </h1>
+        <p class="text-muted">Price trends for the period: {{ start_date }} to {{ end_date }}</p>
+        <p class="small text-info">Data points found: {{ data_count }}</p>
+    </div>
+</div>
+
+<!-- Chart Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-area text-info"></i>
+                    Price Trends Over Time
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="chart-container" style="height: 400px;">
+                    {% if trend_data != '{}' %}
+                        <canvas id="priceTrendChart" width="400" height="100"></canvas>
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-chart-line fa-3x mb-3"></i>
+                            <h5>No pricing data available</h5>
+                            <p><a href="{% url 'analyzer:manual_scrape' %}">Scrape some data</a> to see price trends.</p>
+                            <p class="small">Found {{ data_count }} flights in the database</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Route Comparison -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-balance-scale text-warning"></i>
+                    Route Price Comparison
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="comparison-container" style="height: 300px;">
+                    {% if trend_data != '{}' %}
+                        <canvas id="routeComparisonChart" width="400" height="150"></canvas>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <p>No route comparison data available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Debug Information -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">Data Summary</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Routes with Data:</strong> <span id="route-count">0</span></p>
+                <p><strong>Date Range:</strong> <span id="date-range">N/A</span></p>
+                <p><strong>Sample Routes:</strong> <span id="sample-routes">N/A</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Add Chart.js date adapter -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const trendData = {{ trend_data|safe }};
+    
+    console.log('Trend data received:', trendData);
+    console.log('Number of routes:', Object.keys(trendData).length);
+    
+    // Update debug information
+    document.getElementById('route-count').textContent = Object.keys(trendData).length;
+    
+    if (Object.keys(trendData).length > 0) {
+        const sampleRoutes = Object.keys(trendData).slice(0, 3).join(', ');
+        document.getElementById('sample-routes').textContent = sampleRoutes;
+        
+        // Get date range
+        let allDates = [];
+        Object.values(trendData).forEach(routeData => {
+            allDates = allDates.concat(Object.keys(routeData));
+        });
+        
+        if (allDates.length > 0) {
+            allDates.sort();
+            const minDate = allDates[0];
+            const maxDate = allDates[allDates.length - 1];
+            document.getElementById('date-range').textContent = `${minDate} to ${maxDate}`;
+        }
+    }
+    
+    // Only create charts if we have data
+    if (Object.keys(trendData).length === 0) {
+        console.log('No trend data available for charts');
+        return;
+    }
+    
+    // Price Trend Chart - FIXED: Use regular scale instead of time scale
+    const ctx1 = document.getElementById('priceTrendChart');
+    if (ctx1) {
+        const datasets = [];
+        const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#20c997'];
+        let colorIndex = 0;
+        
+        // Get all unique dates and sort them
+        let allDates = new Set();
+        Object.values(trendData).forEach(routeData => {
+            Object.keys(routeData).forEach(date => allDates.add(date));
+        });
+        const sortedDates = Array.from(allDates).sort();
+        
+        for (const [route, dateData] of Object.entries(trendData)) {
+            const data = [];
+            
+            // Create data points for each date
+            sortedDates.forEach(date => {
+                if (dateData[date] !== undefined) {
+                    data.push(dateData[date]);
+                } else {
+                    data.push(null); // No data for this date
+                }
+            });
+            
+            if (data.some(val => val !== null)) {
+                datasets.push({
+                    label: route,
+                    data: data,
+                    borderColor: colors[colorIndex % colors.length],
+                    backgroundColor: colors[colorIndex % colors.length] + '20',
+                    fill: false,
+                    tension: 0.1,
+                    spanGaps: true
+                });
+                colorIndex++;
+            }
+        }
+        
+        console.log('Creating line chart with datasets:', datasets.length);
+        console.log('Labels (dates):', sortedDates.slice(0, 10), '...'); // Show first 10 dates
+        
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: sortedDates,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        },
+                        ticks: {
+                            maxTicksLimit: 10 // Limit number of x-axis labels
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Price (AUD)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Route Comparison Chart
+    const ctx2 = document.getElementById('routeComparisonChart');
+    if (ctx2) {
+        const routeAverages = {};
+        
+        for (const [route, dateData] of Object.entries(trendData)) {
+            const prices = Object.values(dateData);
+            if (prices.length > 0) {
+                routeAverages[route] = prices.reduce((a, b) => a + b, 0) / prices.length;
+            }
+        }
+        
+        console.log('Creating bar chart with route averages:', Object.keys(routeAverages).length);
+        
+        new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(routeAverages),
+                datasets: [{
+                    label: 'Average Price',
+                    data: Object.values(routeAverages),
+                    backgroundColor: colors.slice(0, Object.keys(routeAverages).length),
+                    borderColor: colors.slice(0, Object.keys(routeAverages).length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Price (AUD)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(0);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Average: $' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

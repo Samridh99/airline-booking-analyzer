@@ -1,0 +1,15 @@
+Django
+djangorestframework
+requests
+beautifulsoup4
+selenium
+pandas
+plotly
+celery
+redis
+python-dotenv
+openai
+lxml
+fake-useragent
+psycopg2-binary
+dj-database-url

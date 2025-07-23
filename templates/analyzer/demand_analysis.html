@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Demand Analysis - Airline Market Analyzer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-bar text-primary"></i>
+            Market Demand Analysis
+        </h1>
+    </div>
+</div>
+
+<!-- Demand Summary Cards -->
+<div class="row mb-4">
+    {% for summary in demand_summary %}
+    <div class="col-md-3">
+        <div class="card bg-{% if summary.demand_level == 'very_high' %}danger{% elif summary.demand_level == 'high' %}warning{% elif summary.demand_level == 'medium' %}info{% else %}secondary{% endif %} text-white">
+            <div class="card-body text-center">
+                <h6 class="card-title">{{ summary.demand_level|title }} Demand</h6>
+                <h2 class="mb-1">{{ summary.count }}</h2>
+                <small>Routes</small>
+                {% if summary.avg_price %}
+                <p class="mb-0 mt-2"><small>Avg: ${{ summary.avg_price|floatformat:0 }}</small></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Demand Data Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Demand Data</h5>
+                <span class="badge bg-primary">{{ demand_data|length }} records</span>
+            </div>
+            <div class="card-body">
+                {% if demand_data %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Route</th>
+                                    <th>Date</th>
+                                    <th>Search Volume</th>
+                                    <th>Avg Price</th>
+                                    <th>Price Trend</th>
+                                    <th>Demand Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for demand in demand_data %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ demand.route.origin.iata_code }}</span>
+                                        <i class="fas fa-arrow-right mx-1 text-muted"></i>
+                                        <span class="badge bg-light text-dark">{{ demand.route.destination.iata_code }}</span>
+                                    </td>
+                                    <td>{{ demand.date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ demand.search_volume }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">${{ demand.average_price }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if demand.price_trend == 'increasing' %}success{% elif demand.price_trend == 'decreasing' %}danger{% else %}secondary{% endif %}">
+                                            <i class="fas fa-arrow-{% if demand.price_trend == 'increasing' %}up{% elif demand.price_trend == 'decreasing' %}down{% else %}right{% endif %}"></i>
+                                            {{ demand.get_price_trend_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if demand.demand_level == 'very_high' %}danger{% elif demand.demand_level == 'high' %}warning{% elif demand.demand_level == 'medium' %}info{% else %}secondary{% endif %}">
+                                            {{ demand.get_demand_level_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                        <h5>No demand data available</h5>
+                        <p><a href="{% url 'analyzer:manual_scrape' %}">Scrape some data</a> to see demand analysis.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

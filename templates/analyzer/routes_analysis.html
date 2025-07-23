@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Routes Analysis - Airline Market Analyzer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-route text-primary"></i>
+            Routes Analysis
+        </h1>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="origin" class="form-label">Origin</label>
+                        <select name="origin" id="origin" class="form-select">
+                            <option value="">All Origins</option>
+                            {% for airport in airports %}
+                                <option value="{{ airport.iata_code }}" {% if origin_filter == airport.iata_code %}selected{% endif %}>
+                                    {{ airport.iata_code }} - {{ airport.city }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="destination" class="form-label">Destination</label>
+                        <select name="destination" id="destination" class="form-select">
+                            <option value="">All Destinations</option>
+                            {% for airport in airports %}
+                                <option value="{{ airport.iata_code }}" {% if destination_filter == airport.iata_code %}selected{% endif %}>
+                                    {{ airport.iata_code }} - {{ airport.city }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <a href="{% url 'analyzer:routes_analysis' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Routes Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Route Performance</h5>
+                <span class="badge bg-primary">{{ routes|length }} routes</span>
+            </div>
+            <div class="card-body">
+                {% if routes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Route</th>
+                                    <th>Cities</th>
+                                    <th>Airline</th>
+                                    <th>Flight Count</th>
+                                    <th>Avg Price</th>
+                                    <th>Distance</th>
+                                    <th>Price per KM</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for route in routes %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ route.origin.iata_code }}</span>
+                                        <i class="fas fa-arrow-right mx-1 text-muted"></i>
+                                        <span class="badge bg-light text-dark">{{ route.destination.iata_code }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ route.origin.city }}</strong>
+                                        <i class="fas fa-arrow-right mx-1 text-muted"></i>
+                                        <strong>{{ route.destination.city }}</strong>
+                                    </td>
+                                    <td>{{ route.airline.name }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ route.flight_count }}</span>
+                                    </td>
+                                    <td>
+                                        {% if route.avg_price %}
+                                            <span class="fw-bold text-success">${{ route.avg_price|floatformat:2 }}</span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if route.distance %}
+                                            {{ route.distance }} km
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if route.avg_price and route.distance %}
+                                            {% widthratio route.avg_price route.distance 1 as price_per_km %}
+                                            ${{ price_per_km|floatformat:3 }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-route fa-3x mb-3"></i>
+                        <h5>No routes found</h5>
+                        <p>Try adjusting your filters or <a href="{% url 'analyzer:manual_scrape' %}">scrape new data</a>.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

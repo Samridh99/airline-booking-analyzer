@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Airline Market Analyzer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt text-primary"></i>
+            Market Analysis Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Key Metrics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Routes</h6>
+                        <h2 class="mb-0">{{ total_routes }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-route fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Flights</h6>
+                        <h2 class="mb-0">{{ total_flights }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-plane fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Average Price</h6>
+                        <h2 class="mb-0">${{ avg_price }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-dollar-sign fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">AI Insights</h6>
+                        <h2 class="mb-0">{{ recent_insights|length }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-lightbulb fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Flights -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock text-primary"></i>
+                    Recent Flight Data
+                </h5>
+                <a href="{% url 'analyzer:routes_analysis' %}" class="btn btn-sm btn-outline-primary">
+                    View All Routes
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_flights %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Flight</th>
+                                    <th>Route</th>
+                                    <th>Airline</th>
+                                    <th>Price</th>
+                                    <th>Departure</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for flight in recent_flights %}
+                                <tr>
+                                    <td><strong>{{ flight.flight_number }}</strong></td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ flight.route.origin.iata_code }}</span>
+                                        <i class="fas fa-arrow-right mx-1"></i>
+                                        <span class="badge bg-light text-dark">{{ flight.route.destination.iata_code }}</span>
+                                    </td>
+                                    <td>{{ flight.route.airline.name }}</td>
+                                    <td>
+                                        <span class="fw-bold text-success">${{ flight.price }}</span>
+                                    </td>
+                                    <td>{{ flight.departure_time|date:"M d, H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-plane fa-3x mb-3"></i>
+                        <p>No flight data available. <a href="{% url 'analyzer:manual_scrape' %}">Scrape some data</a> to get started.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Popular Routes & Insights -->
+    <div class="col-md-4">
+        <!-- Popular Routes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-fire text-danger"></i>
+                    Popular Routes
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if popular_routes %}
+                    {% for route in popular_routes %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <strong>{{ route.origin.city }}</strong>
+                            <i class="fas fa-arrow-right mx-1 text-muted"></i>
+                            <strong>{{ route.destination.city }}</strong>
+                            <div class="small text-muted">{{ route.airline.name }}</div>
+                        </div>
+                        <span class="badge bg-primary">{{ route.flight_count }}</span>
+                    </div>
+                    {% if not forloop.last %}<hr class="my-2">{% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No route data available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Insights -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb text-warning"></i>
+                    Latest Insights
+                </h5>
+                <a href="{% url 'analyzer:insights' %}" class="btn btn-sm btn-outline-warning">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_insights %}
+                    {% for insight in recent_insights %}
+                    <div class="mb-3">
+                        <h6 class="mb-1">{{ insight.title }}</h6>
+                        <p class="small text-muted mb-1">{{ insight.description|truncatewords:15 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-{{ insight.insight_type|lower }}">{{ insight.get_insight_type_display }}</span>
+                            <small class="text-muted">{{ insight.created_at|timesince }} ago</small>
+                        </div>
+                    </div>
+                    {% if not forloop.last %}<hr class="my-2">{% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No insights generated yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
